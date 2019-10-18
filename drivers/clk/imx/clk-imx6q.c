@@ -1012,11 +1012,31 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
 	 * Let's initially set up CLKO with OSC24M, since this configuration
 	 * is widely used by imx6q board designs to clock audio codec.
 	 */
-	imx_clk_set_parent(clk[IMX6QDL_CLK_CKO2_SEL], clk[IMX6QDL_CLK_OSC]);
-	imx_clk_set_parent(clk[IMX6QDL_CLK_CKO], clk[IMX6QDL_CLK_CKO2]);
-
+	if (!IS_ENABLED(CONFIG_SND_SOC_AK5386)) {
+		imx_clk_set_parent(clk[IMX6QDL_CLK_CKO2_SEL], clk[IMX6QDL_CLK_OSC]);
+		printk(KERN_INFO "System is not using HiFi Audio Card\n");
+	}
 	/* Audio-related clocks configuration */
-	clk_set_parent(clk[IMX6QDL_CLK_SPDIF_SEL], clk[IMX6QDL_CLK_PLL3_PFD3_454M]);
+	
+	if (IS_ENABLED(CONFIG_SND_SOC_AK5386)) {
+		imx_clk_set_parent(clk[IMX6QDL_CLK_CKO], clk[IMX6QDL_CLK_CKO2]);
+       		imx_clk_set_parent(clk[IMX6QDL_CLK_SSI1_SEL], clk[IMX6QDL_CLK_PLL4_AUDIO_DIV]);
+       		imx_clk_set_parent(clk[IMX6QDL_CLK_CKO2_SEL], clk[IMX6QDL_CLK_SSI1]);
+
+       		imx_clk_set_rate(clk[IMX6QDL_CLK_PLL4_AUDIO_DIV], 196608000);
+       		imx_clk_set_rate(clk[IMX6QDL_CLK_SSI1], 196608000/8);
+   		
+		imx_clk_prepare_enable(clk[IMX6QDL_CLK_PLL4]);
+   		imx_clk_prepare_enable(clk[IMX6QDL_PLL4_BYPASS]);
+   		imx_clk_prepare_enable(clk[IMX6QDL_CLK_PLL4_AUDIO]);
+   		imx_clk_prepare_enable(clk[IMX6QDL_CLK_SSI1_SEL]);
+   		imx_clk_prepare_enable(clk[IMX6QDL_CLK_SSI1]);
+   		imx_clk_prepare_enable(clk[IMX6QDL_CLK_CKO2_SEL]);
+   		imx_clk_prepare_enable(clk[IMX6QDL_CLK_CKO2]);
+   		imx_clk_prepare_enable(clk[IMX6QDL_CLK_CKO]);
+		
+		printk(KERN_INFO "IMX6-CLOCK: Turned on MCLK for Audio Codec\n");
+	}
 
 	/* All existing boards with PCIe use LVDS1 */
 	if (IS_ENABLED(CONFIG_PCI_IMX6)) {

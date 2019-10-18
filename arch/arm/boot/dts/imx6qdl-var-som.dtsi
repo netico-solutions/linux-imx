@@ -9,7 +9,7 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
 
-/ {
+/ {	
 	aliases {
 		mxcfb0 = &mxcfb1;
 		mxcfb1 = &mxcfb2;
@@ -69,41 +69,20 @@
 		};
 	};
 
-	wlan_en_reg: fixedregulator@2 {
-		compatible = "regulator-fixed";
-		regulator-name = "wlan-en-regulator";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-
-		/* WLAN_EN GPIO for this board - Bank5, pin13 */
-		gpio = <&gpio7 8 0>;
-
-		/* WLAN card specific delay */
-		startup-delay-us = <70000>;
-		enable-active-high;
-	};
-
 	sound {
-		compatible = "fsl,imx6q-var-som-tlv320aic3x", "fsl,imx-audio-tlv320aic3x";
-		model = "tlv320aic3x-audio";
-		cpu-dai = <&ssi2>;
+		compatible = "fsl,imx-audio-ak5386";
+		model = "imx-ak5386-hifi";
+		ssi-controller = <&ssi1>;
 		audio-codec = <&codec>;
-		audio-routing =
-			/* Headphone connected to HPLOUT, HPROUT */
-			"Headphone Jack",	"HPLOUT",
-			"Headphone Jack",	"HPROUT",
-			"Line In Jack",		"LINE1L",
-			"Line In Jack",		"LINE1R",
-			"Mic Jack",		"DMIC";
-		mux-int-port = <2>;
-		mux-ext-port = <3>;
+		mux-int-port = <1>;
+		mux-ext-port = <4>;
 	};
-
-	sound-hdmi {
-		compatible = "fsl,imx6q-audio-hdmi",
-			     "fsl,imx-audio-hdmi";
-		model = "imx-audio-hdmi";
-		hdmi-controller = <&hdmi_audio>;
+	
+	codec: ak5386@2028000 {
+		#sound-dai-cells = <0>;
+		compatible = "asahi-kasei,ak5386";
+		va-supply = <&reg_usb_otg_vbus>;
+		vd-supply = <&reg_3p3v>;
 	};
 
 	mxcfb1: fb@0 {
@@ -147,13 +126,6 @@
 		status = "disabled";
 	};
 
-	backlight {
-		compatible = "pwm-backlight";
-		pwms = <&pwm2 0 50000>;
-		brightness-levels = <0 4 8 16 32 64 128 248>;
-		default-brightness-level = <7>;
-		status = "okay";
-	};
 
 	v4l2_cap_0 {
 		compatible = "fsl,imx6q-v4l2-capture";
@@ -168,11 +140,16 @@
 		status = "okay";
 	};
 };
-
+	
 &audmux {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_audmux_2>;
+	pinctrl-0 = <&pinctrl_audmux_4>;
 	status = "okay";
+};
+
+&ssi1 {
+	fsl,mode = "i2s-slave";
+      	status = "okay";
 };
 
 &reg_arm {
@@ -194,13 +171,34 @@
 				 <&clks IMX6QDL_CLK_PLL2_PFD0_352M>;
 };
 
-&ecspi3 {
+&ecspi1 {
 	fsl,spi-num-chipselects = <1>;
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&pinctrl_ecspi3_1>;
-	pinctrl-1 = <&pinctrl_ecspi3_1_sleep>;
-	cs-gpios = <&gpio4 24 0>;
+	cs-gpios = <&gpio4 9 0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_ecspi1_1>;
 	status = "okay";
+	
+	encx24j600: eth@0 {
+		compatible = "microchip,encx24j600";
+		spi-max-frequency = <20000000>;
+		interrupt-parent = <&gpio5>;
+		interrupts = <27 0>;
+		reg = <0>;
+	};
+};
+
+&ecspi4 {
+	fsl,spi-num-chipselects = <1>;
+	cs-gpios = <&gpio3 29 0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_ecspi4_1>;
+	status = "okay";
+	
+	SLB9670: tpm_spi_tis@0 {
+		compatible = "infineon,slb9670";
+		spi-max-frequency = <5000000>;
+		reg = <0>;
+	};
 };
 
 &fec {
@@ -227,7 +225,7 @@
 &dcic2 {
 	dcic_id = <1>;
 	dcic_mux = "dcic-lvds1";
-	status = "okay";
+	status = "okey";
 };
 
 &hdmi_audio {
@@ -252,55 +250,16 @@
 	status = "okay";
 };
 
-&i2c1 {
-	clock-frequency = <100000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c1_2>;
-	status = "okay";
-
-	ov564x_mipi: ov564x_mipi@3c {
-		compatible = "ovti,ov564x_mipi";
-		reg = <0x3c>;
-		clocks = <&clks 200>;
-		clock-names = "csi_mclk";
-#if 0
-		DOVDD-supply = <&vgen4_reg>; /* 1.8v */
-		AVDD-supply = <&vgen3_reg>;  /* 2.8v, rev C board is VGEN3 rev B board is VGEN5 */
-		DVDD-supply = <&vgen2_reg>;  /* 1.5v*/
-#endif
-		pwn-gpios = <&gpio3 13 1>;
-		rst-gpios = <&gpio4 10 0>;
-		csi_id = <1>;
-		mclk = <24000000>;
-		mclk_source = <0>;
-	};
-};
-
 &i2c2 {
 	clock-frequency = <100000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c2_2>;
 	status = "okay";
+	
 
 	hdmi_edid: edid@50 {
 		compatible = "fsl,imx6-hdmi-i2c";
 		reg = <0x50>;
-	};
-
-	codec: tlv320aic3x@1b {
-		compatible = "ti,tlv320aic3x";
-		reg = <0x1b>;
-		clocks = <&clks IMX6QDL_CLK_CKO>;
-		clock-names = "clko_clk";
-		IOVDD-supply = <&reg_audio>;
-		DVDD-supply = <&reg_audio>;
-		AVDD-supply = <&reg_audio>;
-		DRVDD-supply = <&reg_audio>;
-		gpio-reset = <&gpio4 5 1>;
-		ai3x-gpio-func = <
-			0 /* AIC3X_GPIO1_FUNC_DISABLED */
-			5 /* AIC3X_GPIO2_FUNC_DIGITAL_MIC_INPUT */
-		>;
 	};
 
 	pmic: pfuze100@08 {
@@ -426,34 +385,29 @@
 			fsl,pins = <
 				/* CTW6120 IRQ */
 				MX6QDL_PAD_EIM_DA7__GPIO3_IO07 		0x80000000
-				/* for Bluetooth/wifi enable */
-				MX6QDL_PAD_SD3_DAT6__GPIO6_IO18		0x1b0b1
 				/* SDMMC2 CD/WP */
 				MX6QDL_PAD_KEY_COL4__GPIO4_IO14		0x80000000
 				MX6QDL_PAD_KEY_ROW4__GPIO4_IO15		0x80000000
-				/* USBOTG ID pin */
-				/*MX6QDL_PAD_GPIO_4__GPIO1_IO04		0x80000000*/
 				/* PMIC INT */
 				MX6QDL_PAD_GPIO_17__GPIO7_IO12		0x80000000
-				/* Wifi Slow Clock */
-				MX6QDL_PAD_ENET_RXD0__OSC32K_32K_OUT	0x000b0
-				/* Audio Clock */
-				MX6QDL_PAD_GPIO_0__CCM_CLKO1		0x130b0
-				/* Audio reset */
-				MX6QDL_PAD_GPIO_19__GPIO4_IO05		0x178b0
-				/* Camera Clock */
-				MX6QDL_PAD_GPIO_3__CCM_CLKO2		0x130b0
-				/* Resistive touch irq */
-				MX6QDL_PAD_DISP0_DAT4__GPIO4_IO25	0x178b0
+				/* Audio Clock <-- external MCLK*/
+				MX6QDL_PAD_CSI0_MCLK__CCM_CLKO1		0x030b0
+				/* Audio Codec Control GPIO pins - slave mode*/
+				MX6QDL_PAD_DISP0_DAT18__GPIO5_IO12	0x0b048
+				MX6QDL_PAD_DISP0_DAT19__GPIO5_IO13 	0x0b048
+				MX6QDL_PAD_EIM_D22__GPIO3_IO22		0x0b048
+				/*Audio Codec PDN pin*/
+				MX6QDL_PAD_EIM_D21__GPIO3_IO21		0x0b048
+
 			>;
 		};
 
-		pinctrl_audmux_2: audmux {
+		pinctrl_audmux_4: audmux4 {
 			fsl,pins = <
-				MX6QDL_PAD_CSI0_DAT7__AUD3_RXD		0x130b0
-				MX6QDL_PAD_CSI0_DAT4__AUD3_TXC		0x130b0
-				MX6QDL_PAD_CSI0_DAT5__AUD3_TXD		0x110b0
-				MX6QDL_PAD_CSI0_DAT6__AUD3_TXFS		0x130b0
+				MX6QDL_PAD_DISP0_DAT23__AUD4_RXD	0x130b0
+				MX6QDL_PAD_DISP0_DAT20__AUD4_TXC	0x130b0
+				MX6QDL_PAD_DISP0_DAT22__AUD4_TXFS	0x130b0
+				MX6QDL_PAD_DISP0_DAT21__AUD4_TXD	0x110b0
 			>;
 		};
 
@@ -496,13 +450,6 @@
 			>;
 		};
 
-		pinctrl_i2c1_2: i2c1grp {
-			fsl,pins = <
-				MX6QDL_PAD_CSI0_DAT8__I2C1_SDA		0x4001b8b1
-				MX6QDL_PAD_CSI0_DAT9__I2C1_SCL		0x4001b8b1
-			>;
-		};
-
 		pinctrl_i2c2_2: i2c2grp {
 			fsl,pins = <
 				MX6QDL_PAD_KEY_COL3__I2C2_SCL		0x4001b8b1
@@ -517,23 +464,6 @@
 			>;
 		};
 
-		pinctrl_ipu1_2: ipu1grp-2 { /* parallel camera */
-			fsl,pins = <
-				MX6QDL_PAD_CSI0_DAT12__IPU1_CSI0_DATA12		0x80000000
-				MX6QDL_PAD_CSI0_DAT13__IPU1_CSI0_DATA13		0x80000000
-				MX6QDL_PAD_CSI0_DAT14__IPU1_CSI0_DATA14		0x80000000
-				MX6QDL_PAD_CSI0_DAT15__IPU1_CSI0_DATA15		0x80000000
-				MX6QDL_PAD_CSI0_DAT16__IPU1_CSI0_DATA16		0x80000000
-				MX6QDL_PAD_CSI0_DAT17__IPU1_CSI0_DATA17		0x80000000
-				MX6QDL_PAD_CSI0_DAT18__IPU1_CSI0_DATA18		0x80000000
-				MX6QDL_PAD_CSI0_DAT19__IPU1_CSI0_DATA19		0x80000000
-				MX6QDL_PAD_CSI0_DATA_EN__IPU1_CSI0_DATA_EN	0x80000000
-				MX6QDL_PAD_CSI0_PIXCLK__IPU1_CSI0_PIXCLK	0x80000000
-				MX6QDL_PAD_CSI0_MCLK__IPU1_CSI0_HSYNC		0x80000000
-				MX6QDL_PAD_CSI0_VSYNC__IPU1_CSI0_VSYNC		0x80000000
-			>;
-		};
-
 		pinctrl_pwm2_1: pwm2grp {
 			fsl,pins = <
 				MX6QDL_PAD_DISP0_DAT9__PWM2_OUT		0x1b0b1
@@ -545,16 +475,6 @@
 			fsl,pins = <
 				MX6QDL_PAD_CSI0_DAT10__UART1_TX_DATA	0x1b0b1
 				MX6QDL_PAD_CSI0_DAT11__UART1_RX_DATA	0x1b0b1
-			>;
-		};
-
-		/* Variscite Bluetooth */
-		pinctrl_uart2_3: uart2grp-3 { /* RTS/CTS only mode */
-			fsl,pins = <
-				MX6QDL_PAD_SD3_DAT4__UART2_RX_DATA	0x1b0b1
-				MX6QDL_PAD_SD3_DAT5__UART2_TX_DATA	0x1b0b1
-				MX6QDL_PAD_EIM_D28__UART2_CTS_B		0x1b0b1
-				MX6QDL_PAD_EIM_D29__UART2_RTS_B		0x1b0b1
 			>;
 		};
 
@@ -622,18 +542,18 @@
 			>;
 		};
 
-		pinctrl_usdhc3_2_200mhz: usdhc3grp-200mhz {
-			fsl,pins = <
-				MX6QDL_PAD_SD3_CMD__SD3_CMD		0x170F9
-				MX6QDL_PAD_SD3_CLK__SD3_CLK		0x100F9
-				MX6QDL_PAD_SD3_DAT0__SD3_DATA0		0x170F9
-				MX6QDL_PAD_SD3_DAT1__SD3_DATA1		0x170F9
-				MX6QDL_PAD_SD3_DAT2__SD3_DATA2		0x170F9
-				MX6QDL_PAD_SD3_DAT3__SD3_DATA3		0x170F9
-				MX6QDL_PAD_SD3_DAT7__GPIO6_IO17		0x130F9   /* reserve two pins from sd1 for wl8 gpio, this is pulled low at reset for WL_EN */
-				MX6QDL_PAD_SD3_RST__GPIO7_IO08		0x130F9   /* this is for wl_irq which driver will configure as an input with a pull down */
-			>;
-		};
+		//pinctrl_usdhc3_2_200mhz: usdhc3grp-200mhz {
+		//	fsl,pins = <
+		//		MX6QDL_PAD_SD3_CMD__SD3_CMD		0x170F9
+		//		MX6QDL_PAD_SD3_CLK__SD3_CLK		0x100F9
+		//		MX6QDL_PAD_SD3_DAT0__SD3_DATA0		0x170F9
+		//		MX6QDL_PAD_SD3_DAT1__SD3_DATA1		0x170F9
+		//		MX6QDL_PAD_SD3_DAT2__SD3_DATA2		0x170F9
+		//		MX6QDL_PAD_SD3_DAT3__SD3_DATA3		0x170F9
+		//		MX6QDL_PAD_SD3_DAT7__GPIO6_IO17		0x130F9   /* reserve two pins from sd1 for wl8 gpio, this is pulled low at reset for WL_EN */
+		//		MX6QDL_PAD_SD3_RST__GPIO7_IO08		0x130F9   /* this is for wl_irq which driver will configure as an input with a pull down */
+		//	>;
+		//};
 
 		pinctrl_gpmi_nand_v1: gpmi-nand-1 {
 			fsl,pins = <
@@ -655,22 +575,23 @@
 				MX6QDL_PAD_NANDF_WP_B__NAND_WP_B	0xb0b1
 			>;
 		};
-
-		pinctrl_ecspi3_1: ecspi3grp {
-			fsl,pins = <
-				MX6QDL_PAD_DISP0_DAT2__ECSPI3_MISO	0x100b1
-				MX6QDL_PAD_DISP0_DAT1__ECSPI3_MOSI	0x100b1
-				MX6QDL_PAD_DISP0_DAT0__ECSPI3_SCLK	0x100b1
-				MX6QDL_PAD_DISP0_DAT3__GPIO4_IO24	0x178b0 /* CS */
+		
+		pinctrl_ecspi1_1: ecspi1grp {
+				fsl,pins = <
+				MX6QDL_PAD_KEY_COL1__ECSPI1_MISO	0x100b1
+				MX6QDL_PAD_KEY_ROW0__ECSPI1_MOSI	0x100b1
+				MX6QDL_PAD_KEY_COL0__ECSPI1_SCLK	0x100b1
+				MX6QDL_PAD_KEY_ROW1__GPIO4_IO09      	0x80000000 /* CS */
+				MX6QDL_PAD_CSI0_DAT9__GPIO5_IO27	0x80000000 /*irq*/
 			>;
 		};
 
-		pinctrl_ecspi3_1_sleep: ecspi3sleepgrp {
+		pinctrl_ecspi4_1: ecspi4grp {
 			fsl,pins = <
-				MX6QDL_PAD_DISP0_DAT2__GPIO4_IO23	0x178b0
-				MX6QDL_PAD_DISP0_DAT1__GPIO4_IO22	0x178b0
-				MX6QDL_PAD_DISP0_DAT0__GPIO4_IO21	0x178b0
-				MX6QDL_PAD_DISP0_DAT3__GPIO4_IO24	0x178b0 /* CS */
+				/*MX6QDL_PAD_EIM_D22__ECSPI4_MISO 	0x100b1 <-- used by ctl audio*/ 
+				MX6QDL_PAD_EIM_D28__ECSPI4_MOSI		0x100b1
+				MX6QDL_PAD_EIM_D21__ECSPI4_SCLK		0x100b1
+				MX6QDL_PAD_EIM_D29__GPIO3_IO29		0x8000000 /* CS */
 			>;
 		};
 
@@ -684,30 +605,6 @@
 	};
 };
 
-&mipi_csi {
-	status = "okay";
-	ipu_id = <0>;
-	csi_id = <1>;
-	v_channel = <0>;
-	lanes = <2>;
-};
-
-&pcie {
-	reset-gpio    = <&gpio5 13 0>;	/* gpio pin num of power good signal */
-	wake-up-gpio  = <&gpio3 22 1>;	/* gpio pin num of incoming wakeup signal */
-	status = "okay";
-};
-
-&pwm2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_pwm2_1>;
-	status = "okay";
-};
-
-&ssi2 {
-	fsl,mode = "i2s-slave";
-	status = "okay";
-};
 
 &snvs_poweroff {
 	status = "okay";
@@ -717,14 +614,6 @@
 &uart1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1_1>;
-	status = "okay";
-};
-
-/* Bluetooth Uart */
-&uart2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_uart2_3>;
-	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
@@ -778,19 +667,6 @@
 	status = "okay";
 };
 
-&usbotg {
-	vbus-supply = <&reg_usb_otg_vbus>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usbotg_var>;
-	disable-over-current;
-	/* dr_mode: One of "host", "peripheral" or "otg". Defaults to "otg" */
-	dr_mode = "host";
-	srp-disable;
-	hnp-disable;
-	adp-disable;
-	status = "okay";
-};
-
 &usbphy1 {
 	tx-d-cal = <0x5>;
 };
@@ -818,33 +694,3 @@
 	enable-sdio-wakeup;
 	status = "okay";
 };
-
-&usdhc3 {	/* uSDHC3, TiWi wl1271 7 Wilink8 WL18xx*/
-	pinctrl-names = "default", "state_100mhz", "state_200mhz";
-	pinctrl-0 = <&pinctrl_usdhc3_2>;
-	pinctrl-1 = <&pinctrl_usdhc3_2_100mhz>;
-	pinctrl-2 = <&pinctrl_usdhc3_2_200mhz>;
-	keep-power-in-suspend;
-	enable-sdio-wakeup;
-	vmmc-supply = <&wlan_en_reg>;
-	bus-width = <4>;
-	non-removable;
-	cap-power-off-card;
-	status = "okay";
-	#address-cells = <1>;
-	#size-cells = <0>;
-	wlcore: wlcore@0 {
-		compatible = "ti,wl1835";
-		reg = <2>;
-		interrupt-parent = <&gpio6>;
-		interrupts = <17 IRQ_TYPE_EDGE_RISING>;
-
-		/* if a 12xx card is there, configure the clock to WL12XX_REFCLOCK_38_XTAL */
-		ref-clock-frequency = <38400000>;
-	};
-};
-
-&snvs_rtc {
-	status = "disabled";
-};
-
