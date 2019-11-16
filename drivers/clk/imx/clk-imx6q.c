@@ -1023,8 +1023,10 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
        		imx_clk_set_parent(clk[IMX6QDL_CLK_SSI1_SEL], clk[IMX6QDL_CLK_PLL4_AUDIO_DIV]);
        		imx_clk_set_parent(clk[IMX6QDL_CLK_CKO2_SEL], clk[IMX6QDL_CLK_SSI1]);
 
-       		imx_clk_set_rate(clk[IMX6QDL_CLK_PLL4_AUDIO_DIV], 196608000);
-       		imx_clk_set_rate(clk[IMX6QDL_CLK_SSI1], 196608000/8);
+       		//imx_clk_set_rate(clk[IMX6QDL_CLK_PLL4_AUDIO_DIV], 196608000);
+       		//imx_clk_set_rate(clk[IMX6QDL_CLK_SSI1], 196608000/8);
+       		imx_clk_set_rate(clk[IMX6QDL_CLK_PLL4_AUDIO_DIV], 209715200);
+       		imx_clk_set_rate(clk[IMX6QDL_CLK_SSI1], 209715200/16);
    		
 		imx_clk_prepare_enable(clk[IMX6QDL_CLK_PLL4]);
    		imx_clk_prepare_enable(clk[IMX6QDL_PLL4_BYPASS]);
