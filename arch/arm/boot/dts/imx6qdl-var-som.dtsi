@@ -385,10 +385,9 @@
 			fsl,pins = <
 				/* CTW6120 IRQ */
 				MX6QDL_PAD_EIM_DA7__GPIO3_IO07 		0x80000000
-				/* SDMMC2 CD/WP */
-				MX6QDL_PAD_KEY_COL4__GPIO4_IO14		0x80000000
-				MX6QDL_PAD_KEY_ROW4__GPIO4_IO15		0x80000000
-				/* PMIC INT */
+				/* SDMMC2 CD */
+				MX6QDL_PAD_EIM_D27__GPIO3_IO27	    0x80000000							
+                /* PMIC INT */
 				MX6QDL_PAD_GPIO_17__GPIO7_IO12		0x80000000
 				/* Audio Clock <-- external MCLK*/
 				MX6QDL_PAD_CSI0_MCLK__CCM_CLKO1		0x030b0
@@ -687,10 +686,10 @@
 &usdhc2 {	/* uSDHC2, MMC/SD card */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usdhc2_2>;
-	cd-gpios = <&gpio4 14 GPIO_ACTIVE_LOW>;
-	wp-gpios = <&gpio4 15 GPIO_ACTIVE_HIGH>;
+	cd-gpios = <&gpio3 27 GPIO_ACTIVE_LOW>;
 	no-1-8-v;
-	keep-power-in-suspend;
+	disabled-wp;
+    keep-power-in-suspend;
 	enable-sdio-wakeup;
 	status = "okay";
 };
