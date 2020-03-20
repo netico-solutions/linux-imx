@@ -18,7 +18,7 @@
 	};
 
 	chosen {
-		stdout-path = &uart1;
+		stdout-path = &uart3;
 	};
 
 	memory: memory {
@@ -171,22 +171,22 @@
 				 <&clks IMX6QDL_CLK_PLL2_PFD0_352M>;
 };
 
-&ecspi1 {
+/*&ecspi2 {
 	fsl,spi-num-chipselects = <1>;
-	cs-gpios = <&gpio4 9 0>;
+	cs-gpios = <&gpio5 12 0>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_ecspi1_1>;
+	pinctrl-0 = <&pinctrl_ecspi2_1>;
 	status = "okay";
 	
 	encx24j600: eth@0 {
 		compatible = "microchip,encx24j600";
-		spi-max-frequency = <20000000>;
-		interrupt-parent = <&gpio5>;
-		interrupts = <27 0>;
+		spi-max-frequency = <2000000>;
+		interrupt-parent = <&gpio1>;
+		interrupts = <2 0>;
 		reg = <0>;
 	};
 };
-
+*/
 &ecspi4 {
 	fsl,spi-num-chipselects = <1>;
 	cs-gpios = <&gpio3 29 0>;
@@ -368,11 +368,12 @@
 	pinctrl-0 = <&pinctrl_i2c3_3>;
 	status = "okay";
 
-	/* DS1337 RTC module */
-	rtc@0x68 {
-		compatible = "dallas,ds1337";
-		reg = <0x68>;
-	};
+    mcp23017@20 {
+        compatible = "microchip,mcp23017";
+        reg = <0x20>;
+    };
+
+    
 };
 
 &iomuxc {
@@ -391,13 +392,6 @@
 				MX6QDL_PAD_GPIO_17__GPIO7_IO12		0x80000000
 				/* Audio Clock <-- external MCLK*/
 				MX6QDL_PAD_CSI0_MCLK__CCM_CLKO1		0x030b0
-				/* Audio Codec Control GPIO pins - slave mode*/
-				MX6QDL_PAD_DISP0_DAT18__GPIO5_IO12	0x0b048
-				MX6QDL_PAD_DISP0_DAT19__GPIO5_IO13 	0x0b048
-				MX6QDL_PAD_EIM_D22__GPIO3_IO22		0x0b048
-				/*Audio Codec PDN pin*/
-				MX6QDL_PAD_EIM_D21__GPIO3_IO21		0x0b048
-
 			>;
 		};
 
@@ -417,15 +411,11 @@
 				MX6QDL_PAD_RGMII_TXC__RGMII_TXC		0x1b0b0
 				MX6QDL_PAD_RGMII_TD0__RGMII_TD0		0x1b0b0
 				MX6QDL_PAD_RGMII_TD1__RGMII_TD1		0x1b0b0
-				/*MX6QDL_PAD_RGMII_TD2__RGMII_TD2		0x1b0b0
-				MX6QDL_PAD_RGMII_TD3__RGMII_TD3		0x1b0b0*/
 				MX6QDL_PAD_RGMII_TX_CTL__RGMII_TX_CTL	0x1b0b0
 				MX6QDL_PAD_ENET_REF_CLK__ENET_TX_CLK	0x1b0b0
 				MX6QDL_PAD_RGMII_RXC__RGMII_RXC		0x1b0b0
 				MX6QDL_PAD_RGMII_RD0__RGMII_RD0		0x1b0b0
 				MX6QDL_PAD_RGMII_RD1__RGMII_RD1		0x1b0b0
-				/*MX6QDL_PAD_RGMII_RD2__RGMII_RD2		0x1b0b0
-				MX6QDL_PAD_RGMII_RD3__RGMII_RD3		0x1b0b0*/
 				MX6QDL_PAD_RGMII_RX_CTL__RGMII_RX_CTL	0x1b0b0
 			>;
 		};
@@ -458,7 +448,7 @@
 
 		pinctrl_i2c3_3: i2c3grp {
 			fsl,pins = <
-				MX6QDL_PAD_GPIO_5__I2C3_SCL		0x4001b8b1
+				MX6QDL_PAD_GPIO_5__I2C3_SCL		    0x4001b8b1
 				MX6QDL_PAD_GPIO_16__I2C3_SDA		0x4001b8b1
 			>;
 		};
@@ -469,21 +459,19 @@
 			>;
 		};
 
-		/* Linux Console */
-		pinctrl_uart1_1: uart1grp-1 { /* RX/TX only */
-			fsl,pins = <
-				MX6QDL_PAD_CSI0_DAT10__UART1_TX_DATA	0x1b0b1
-				MX6QDL_PAD_CSI0_DAT11__UART1_RX_DATA	0x1b0b1
-			>;
-		};
+		//pinctrl_uart1_1: uart1grp-1 { /* RX/TX only */
+		//	fsl,pins = <
+		//		MX6QDL_PAD_CSI0_DAT10__UART1_TX_DATA	0x1b0b1
+		//		MX6QDL_PAD_CSI0_DAT11__UART1_RX_DATA	0x1b0b1
+		//	>;
+		//};
+        
 
-		/* Variscite Uart2 support */
-		pinctrl_uart3_2: uart3grp-2 {	/* RX/TX RTS/CTS */
+		/* Linux Console */
+		pinctrl_uart3_2: uart3grp-2 {	/* RX/TX */
 			fsl,pins = <
 				MX6QDL_PAD_EIM_D25__UART3_RX_DATA	0x1b0b1
 				MX6QDL_PAD_EIM_D24__UART3_TX_DATA	0x1b0b1
-				MX6QDL_PAD_EIM_D23__UART3_CTS_B		0x1b0b1
-				MX6QDL_PAD_EIM_EB3__UART3_RTS_B		0x1b0b1
 			>;
 		};
 
@@ -575,19 +563,20 @@
 			>;
 		};
 		
-		pinctrl_ecspi1_1: ecspi1grp {
+/*		pinctrl_ecspi2_1: ecspi2grp {
 				fsl,pins = <
-				MX6QDL_PAD_KEY_COL1__ECSPI1_MISO	0x100b1
-				MX6QDL_PAD_KEY_ROW0__ECSPI1_MOSI	0x100b1
-				MX6QDL_PAD_KEY_COL0__ECSPI1_SCLK	0x100b1
-				MX6QDL_PAD_KEY_ROW1__GPIO4_IO09      	0x80000000 /* CS */
-				MX6QDL_PAD_CSI0_DAT9__GPIO5_IO27	0x80000000 /*irq*/
-			>;
+			    MX6QDL_PAD_DISP0_DAT19__ECSPI2_SCLK 0x100b1
+                MX6QDL_PAD_CSI0_DAT9__ECSPI2_MOSI   0x100b1
+                MX6QDL_PAD_CSI0_DAT10__ECSPI2_MISO  0x100b1
+                /*MX6QDL_PAD_DISP0_DAT18__GPIO5_IO12  0x8000000 /* CS */
+/*                MX6QDL_PAD_GPIO_2__GPIO1_IO02       0x8000000 /* irq */
+/*                
+            >;
 		};
-
+*/
 		pinctrl_ecspi4_1: ecspi4grp {
 			fsl,pins = <
-				/*MX6QDL_PAD_EIM_D22__ECSPI4_MISO 	0x100b1 <-- used by ctl audio*/ 
+				MX6QDL_PAD_EIM_D22__ECSPI4_MISO 	0x100b1 
 				MX6QDL_PAD_EIM_D28__ECSPI4_MOSI		0x100b1
 				MX6QDL_PAD_EIM_D21__ECSPI4_SCLK		0x100b1
 				MX6QDL_PAD_EIM_D29__GPIO3_IO29		0x8000000 /* CS */
@@ -609,18 +598,10 @@
 	status = "okay";
 };
 
-/* Console Uart */
-&uart1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_uart1_1>;
-	status = "okay";
-};
-
-/* ttymxc2 UART */
+/* ttymxc2 UART - debug console*/
 &uart3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart3_2>;
-	fsl,uart-has-rtscts;
 	status = "okay";
 };
 
