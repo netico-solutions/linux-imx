@@ -94,6 +94,14 @@
 		va-supply = <&reg_audio>;
 		vd-supply = <&reg_3p3v>;
 	};
+    
+    backlight {
+                   compatible = "pwm-backlight";
+                   pwms = <&pwm2 0 50000>;
+                   brightness-levels = <0 4 8 16 32 64 128 248>;
+                   default-brightness-level = <7>;
+                   status = "okay";
+    };
 
 	mxcfb1: fb@0 {
 		compatible = "fsl,mxc_sdc_fb";
@@ -155,18 +163,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_audmux_4>;
 	status = "okay";
-};
-
-&reg_arm {
-	vin-supply = <&sw1a_reg>;
-};
-
-&reg_pu {
-	vin-supply = <&sw1c_reg>;
-};
-
-&reg_soc {
-	vin-supply = <&sw1c_reg>;
 };
 
 &ssi1 {
@@ -474,6 +470,12 @@
 				MX6QDL_PAD_GPIO_16__I2C3_SDA		0x4001b8b1
 			>;
 		};
+        
+        pinctrl_pwm2_1: pwm2grp {
+            fsl,pins = <
+                MX6QDL_PAD_DISP0_DAT9__PWM2_OUT         0x1b0b1
+            >;
+        };
 
 
 		/* Linux Console */
@@ -607,6 +609,13 @@
 	status = "okay";
 };
 
+&pwm2 {
+    pinctrl-names = "default";
+    pinctrl-0 = <&pinctrl_pwm2_1>;
+    status = "okay";
+};
+
+
 /* ttymxc2 UART - debug console*/
 &uart3 {
 	pinctrl-names = "default";
@@ -655,7 +664,7 @@
     pinctrl-names = "default";
     pinctrl-0 = <&pinctrl_usbotg_var>;
     disable-over-current;
-    dr_mode = "host";
+    dr_mode = "peripheral";
     status = "okay";
 };
 
