@@ -58,6 +58,7 @@ snd-soc-eukrea-tlv320-objs := eukrea-tlv320.o
 snd-soc-phycore-ac97-objs := phycore-ac97.o
 snd-soc-mx27vis-aic32x4-objs := mx27vis-aic32x4.o
 snd-soc-wm1133-ev1-objs := wm1133-ev1.o
+snd-soc-imx-ak5386-objs := imx-ak5386.o
 snd-soc-imx-es8328-objs := imx-es8328.o
 snd-soc-imx-cs42888-objs := imx-cs42888.o
 snd-soc-imx-sgtl5000-objs := imx-sgtl5000.o
@@ -95,5 +96,6 @@ obj-$(CONFIG_SND_SOC_IMX_MC13783) += snd-soc-imx-mc13783.o
 obj-$(CONFIG_SND_SOC_IMX_MQS) += snd-soc-imx-mqs.o
 obj-$(CONFIG_SND_SOC_IMX_SI476X) += snd-soc-imx-si476x.o
 obj-$(CONFIG_SND_SOC_IMX_HDMI) += snd-soc-imx-hdmi.o
+obj-y += snd-soc-imx-ak5386.o
 
 AFLAGS_hdmi_pcm.o := -march=armv7-a -mtune=cortex-a9 -mfpu=neon -mfloat-abi=softfp
