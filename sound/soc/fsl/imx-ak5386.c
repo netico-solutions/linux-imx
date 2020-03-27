@@ -139,8 +139,6 @@ fail:
 }
 
 static int imx_ak5386_remove(struct platform_device *pdev) {
-	struct snd_soc_card *card = platform_get_drvdata(pdev);
-	//struct imx_ak5386_data *data = snd_soc_card_get_drvdata(card);
 
 	return 0;
 }
