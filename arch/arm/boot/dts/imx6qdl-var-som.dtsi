@@ -291,6 +291,10 @@
 	pinctrl-0 = <&pinctrl_i2c2_2>;
 	status = "okay";
 	
+    rtc: rtc@32 {
+        compatible = "epson,rx8900";
+        reg = <0x32>;
+    };
 
 	hdmi_edid: edid@50 {
 		compatible = "fsl,imx6-hdmi-i2c";
