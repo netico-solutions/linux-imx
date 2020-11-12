@@ -301,6 +301,11 @@
 		reg = <0x50>;
 	};
 
+	hdmi_ddc: ddc@37 {
+		compatible = "i2c-dev";
+		reg = <0x37>;
+	};
+
 	pmic: pfuze100@08 {
 		compatible = "fsl,pfuze100";
 		reg = <0x08>;
