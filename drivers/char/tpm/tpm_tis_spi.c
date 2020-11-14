@@ -112,6 +112,7 @@ static int tpm_tis_spi_read_bytes(struct tpm_tis_data *data, u32 addr,
 
 exit:
 	spi_bus_unlock(phy->spi_device->master);
+	printk(KERN_ERR "SPI_TPM: Read bytes\n");
 	return ret;
 }
 
@@ -170,6 +171,7 @@ static int tpm_tis_spi_write_bytes(struct tpm_tis_data *data, u32 addr,
 
 exit:
 	spi_bus_unlock(phy->spi_device->master);
+	printk(KERN_ERR "SPI_TPM: Write bytes\n");
 	return ret;
 }
 
@@ -180,6 +182,7 @@ static int tpm_tis_spi_read16(struct tpm_tis_data *data, u32 addr, u16 *result)
 	rc = data->phy_ops->read_bytes(data, addr, sizeof(u16), (u8 *)result);
 	if (!rc)
 		*result = le16_to_cpu(*result);
+	printk(KERN_ERR "SPI_TPM: Read16\n");
 	return rc;
 }
 
@@ -190,6 +193,7 @@ static int tpm_tis_spi_read32(struct tpm_tis_data *data, u32 addr, u32 *result)
 	rc = data->phy_ops->read_bytes(data, addr, sizeof(u32), (u8 *)result);
 	if (!rc)
 		*result = le32_to_cpu(*result);
+	printk(KERN_ERR "SPI_TPM: Read32\n");
 	return rc;
 }
 
@@ -210,6 +214,7 @@ static const struct tpm_tis_phy_ops tpm_spi_phy_ops = {
 
 static int tpm_tis_spi_probe(struct spi_device *dev)
 {
+	printk(KERN_ERR "Started probing SPI bus for TPM\n");
 	struct tpm_tis_spi_phy *phy;
 
 	phy = devm_kzalloc(&dev->dev, sizeof(struct tpm_tis_spi_phy),
@@ -218,6 +223,8 @@ static int tpm_tis_spi_probe(struct spi_device *dev)
 		return -ENOMEM;
 
 	phy->spi_device = dev;
+
+	printk(KERN_ERR "Before return in probing SPI bus for TPM\n");
 
 	return tpm_tis_core_init(&dev->dev, &phy->priv, -1, &tpm_spi_phy_ops,
 				 NULL);
@@ -231,6 +238,7 @@ static int tpm_tis_spi_remove(struct spi_device *dev)
 
 	tpm_chip_unregister(chip);
 	tpm_tis_remove(chip);
+	printk(KERN_ERR "SPI_TPM: Removing the driver\n");
 	return 0;
 }
 
