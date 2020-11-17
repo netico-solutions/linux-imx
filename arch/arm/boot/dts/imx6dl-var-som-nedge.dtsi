@@ -9,7 +9,7 @@
 /dts-v1/;
 
 #include "imx6dl-nedge.dtsi"
-#include "imx6qdl-var-som-nedge.dtsi"
+#include "imx6qdl-var-som.dtsi"
 
 / {
 	model = "Variscite i.MX6 DL/Solo VAR-SOM-MX6";
