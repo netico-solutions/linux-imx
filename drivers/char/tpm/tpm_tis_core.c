@@ -682,7 +682,7 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
 #ifdef CONFIG_ACPI
 	chip->acpi_dev_handle = acpi_dev_handle;
 #endif
-
+	printk(KERN_ERR "TPM_CORE: tpm chip allocated\n");
 	/* Maximum timeouts */
 	chip->timeout_a = msecs_to_jiffies(TIS_TIMEOUT_A_MAX);
 	chip->timeout_b = msecs_to_jiffies(TIS_TIMEOUT_B_MAX);
@@ -690,42 +690,53 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
 	chip->timeout_d = msecs_to_jiffies(TIS_TIMEOUT_D_MAX);
 	priv->phy_ops = phy_ops;
 	dev_set_drvdata(&chip->dev, priv);
+	printk(KERN_ERR "TPM_CORE: line 693\n");
 
 	if (wait_startup(chip, 0) != 0) {
 		rc = -ENODEV;
 		goto out_err;
 	}
+	printk(KERN_ERR "TPM_CORE: line 698\n");
 
 	/* Take control of the TPM's interrupt hardware and shut it off */
 	rc = tpm_tis_read32(priv, TPM_INT_ENABLE(priv->locality), &intmask);
+	printk(KERN_ERR "TPM_CORE: rc: %d\n", rc);
 	if (rc < 0)
 		goto out_err;
-
+	printk(KERN_ERR "TPM_CORE: line 705\n");
+	printk(KERN_ERR "TPM_CORE: line 709\n");
 	intmask |= TPM_INTF_CMD_READY_INT | TPM_INTF_LOCALITY_CHANGE_INT |
 		   TPM_INTF_DATA_AVAIL_INT | TPM_INTF_STS_VALID_INT;
 	intmask &= ~TPM_GLOBAL_INT_ENABLE;
 	tpm_tis_write32(priv, TPM_INT_ENABLE(priv->locality), intmask);
 
+	printk(KERN_ERR "TPM_CORE: line 709\n");
+
 	if (request_locality(chip, 0) != 0) {
 		rc = -ENODEV;
 		goto out_err;
 	}
+	printk(KERN_ERR "TPM_CORE: line 715\n");
 
 	rc = tpm2_probe(chip);
 	if (rc)
 		goto out_err;
+	printk(KERN_ERR "TPM_CORE: line 720\n");
 
 	rc = tpm_tis_read32(priv, TPM_DID_VID(0), &vendor);
 	if (rc < 0)
 		goto out_err;
-
+	printk(KERN_ERR "TPM_CORE: line 725\n");
 	priv->manufacturer_id = vendor;
 
 	rc = tpm_tis_read8(priv, TPM_RID(0), &rid);
 	if (rc < 0)
 		goto out_err;
-
+	printk(KERN_ERR "TPM_CORE: line 727\n");
 	dev_info(dev, "%s TPM (device-id 0x%X, rev-id %d)\n",
+		 (chip->flags & TPM_CHIP_FLAG_TPM2) ? "2.0" : "1.2",
+		 vendor >> 16, rid);
+	printk(KERN_ERR "%s TPM (device-id 0x%X, rev-id %d)\n",
 		 (chip->flags & TPM_CHIP_FLAG_TPM2) ? "2.0" : "1.2",
 		 vendor >> 16, rid);
 
@@ -793,6 +804,7 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
 
 	return tpm_chip_register(chip);
 out_err:
+	printk(KERN_ERR "TPM_CORE: out_err, removing chip\n");
 	tpm_tis_remove(chip);
 	return rc;
 }
