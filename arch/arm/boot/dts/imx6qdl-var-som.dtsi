@@ -92,14 +92,14 @@
 		led2: redled {
 			label = "Red LED";
 			gpios = <&gpio2 14 GPIO_ACTIVE_HIGH>;
-            default-state = "on";
+            		default-state = "on";
 			linux,default-trigger = "mmc1";
 		};
-        notled: hdmien {
-            label = "HDMI LED";
-            gpios = <&gpio3 23 GPIO_ACTIVE_HIGH>;
-            default-state = "on";
-        };
+		notled: hdmien {
+		    label = "HDMI LED";
+		    gpios = <&gpio3 23 GPIO_ACTIVE_HIGH>;
+		    default-state = "on";
+		};
 	};
 
 	sound {
@@ -228,14 +228,16 @@
 
 &ecspi4 {
 	fsl,spi-num-chipselects = <1>;
-	cs-gpios = <&gpio3 29 0>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_ecspi4_1>;
+	pinctrl-0 = <&pinctrl_ecspi4_1>, <&pinctrl_spi4_cs>;
+	cs-gpios = <&gpio3 29 0>;
 	status = "okay";
 	
-	SLB9670: tpm_spi_tis@0 {
-		compatible = "infineon,slb9670";
-		spi-max-frequency = <5000000>;
+	slb9670: tpm@0 {
+		compatible = "tcg,tpm_tis-spi";
+		spi-max-frequency = <18500000>;
+		interrupt-parent = <&gpio5>;
+		interrupts = <21 IRQ_TYPE_LEVEL_LOW>;
 		reg = <0>;
 	};
 };
@@ -452,7 +454,7 @@
                 /*Red LED*/
                 MX6QDL_PAD_SD4_DAT6__GPIO2_IO14     0x110b0
                 /*HDMI ENABLE*/
-                MX6QDL_PAD_DI0_PIN4__IPU1_DI0_PIN04 0x110b0 
+                MX6QDL_PAD_DI0_PIN4__IPU1_DI0_PIN04 0x110b0
             >;
         };
 
@@ -635,11 +637,17 @@
             >;
 		};
 		
-        pinctrl_ecspi4_1: ecspi4grp {
+        	pinctrl_ecspi4_1: ecspi4grp {
 			fsl,pins = <
 				MX6QDL_PAD_EIM_D22__ECSPI4_MISO 	0x100b1 
 				MX6QDL_PAD_EIM_D28__ECSPI4_MOSI		0x100b1
 				MX6QDL_PAD_EIM_D21__ECSPI4_SCLK		0x100b1
+				MX6QDL_PAD_CSI0_VSYNC__GPIO5_IO21	0x8000000 /* irq */
+			>;
+		};
+
+		pinctrl_spi4_cs: ecspi4cs {
+			fsl,pins = <
 				MX6QDL_PAD_EIM_D29__GPIO3_IO29		0x8000000 /* CS */
 			>;
 		};
