@@ -63,6 +63,8 @@ static int tpm_tis_spi_read_bytes(struct tpm_tis_data *data, u32 addr,
 	struct tpm_tis_spi_phy *phy = to_tpm_tis_spi_phy(data);
 	int ret, i;
 	struct spi_message m;
+
+	/* Construct spi transfer form which will go into message */
 	struct spi_transfer spi_xfer = {
 		.tx_buf = phy->tx_buf,
 		.rx_buf = phy->rx_buf,
@@ -74,41 +76,81 @@ static int tpm_tis_spi_read_bytes(struct tpm_tis_data *data, u32 addr,
 
 	phy->tx_buf[0] = 0x80 | (len - 1);
 	phy->tx_buf[1] = 0xd4;
+	/* Take first byte of the address and put it into tx_buf[2] */
 	phy->tx_buf[2] = (addr >> 8)  & 0xFF;
+	/* Take second byte of the address and put it into tx_buf[2] */
 	phy->tx_buf[3] = addr	      & 0xFF;
 
+	printk(KERN_ERR "TPM_TIS_SPI: line 80\n");
 	spi_xfer.cs_change = 1;
+	printk(KERN_ERR "TPM_TIS_SPI: line 82\n");
+	/* Construct the message */
 	spi_message_init(&m);
+	printk(KERN_ERR "TPM_TIS_SPI: line 84\n");
 	spi_message_add_tail(&spi_xfer, &m);
+	printk(KERN_ERR "TPM_TIS_SPI: line 86\n");
 
+	/* Lock the bus for exclusive access_ */
 	spi_bus_lock(phy->spi_device->master);
-	ret = spi_sync_locked(phy->spi_device, &m);
-	if (ret < 0)
-		goto exit;
+	printk(KERN_ERR "TPM_TIS_SPI: line 89\n");
 
+	/* Send the message and receive the answer */
+	ret = spi_sync_locked(phy->spi_device, &m);
+	printk(KERN_ERR "TPM_TIS_SPI: first response: %x\n", phy->rx_buf[len-1] & 0xff);
+	printk(KERN_ERR "TPM_TIS_SPI: line 91\n");
+	if (ret < 0) {
+		printk(KERN_ERR "TPM_TIS_SPI: line 93\n");
+		goto exit;
+		}
+
+	printk(KERN_ERR "TPM_TIS_SPI: line 97\n");
+
+	/* Set all tx_buf bits to zero */
 	memset(phy->tx_buf, 0, len);
+	printk(KERN_ERR "TPM_TIS_SPI: line 99\n");
 
 	/* According to TCG PTP specification, if there is no TPM present at
 	 * all, then the design has a weak pull-up on MISO. If a TPM is not
 	 * present, a pull-up on MISO means that the SB controller sees a 1,
 	 * and will latch in 0xFF on the read.
 	 */
+
+	/* Send all 0 message of len==1 and check if the last bit is 0 */
+	/* Retry max TPM_RETRY (50) times, non-zero value should appear before that?  */
 	for (i = 0; (phy->rx_buf[0] & 0x01) == 0 && i < TPM_RETRY; i++) {
+		printk(KERN_ERR "TPM_TIS_SPI: last bit: %x\n", phy->rx_buf[0] & 0x01);		
+		printk(KERN_ERR "TPM_TIS_SPI: message response: %x\n", phy->rx_buf[0] & 0xff);		
 		spi_xfer.len = 1;
+		printk(KERN_ERR "TPM_TIS_SPI: i = %d\n", i);
+		printk(KERN_ERR "TPM_TIS_SPI: line 108\n");
 		spi_message_init(&m);
+		printk(KERN_ERR "TPM_TIS_SPI: line 110\n");
 		spi_message_add_tail(&spi_xfer, &m);
+		printk(KERN_ERR "TPM_TIS_SPI: line 112\n");
 		ret = spi_sync_locked(phy->spi_device, &m);
-		if (ret < 0)
+		
+		printk(KERN_ERR "TPM_TIS_SPI: line 114\n");
+		if (ret < 0) {
+			printk(KERN_ERR "TPM_TIS_SPI: line 116\n");
 			goto exit;
+			}
 	}
 
+	printk(KERN_ERR "TPM_TIS_SPI: line 121\n");
 	spi_xfer.cs_change = 0;
+	printk(KERN_ERR "TPM_TIS_SPI: line 123\n");
 	spi_xfer.len = len;
+	printk(KERN_ERR "TPM_TIS_SPI: line 125\n");
 	spi_xfer.rx_buf = result;
+	printk(KERN_ERR "TPM_TIS_SPI: line 127\n");
 
 	spi_message_init(&m);
+	printk(KERN_ERR "TPM_TIS_SPI: line 130\n");
 	spi_message_add_tail(&spi_xfer, &m);
+	printk(KERN_ERR "TPM_TIS_SPI: line 132\n");
 	ret = spi_sync_locked(phy->spi_device, &m);
+	printk(KERN_ERR "TPM_TIS_SPI: last response: %x\n", phy->rx_buf[0] & 0xff);
+	printk(KERN_ERR "TPM_TIS_SPI: line 134\n");
 
 exit:
 	spi_bus_unlock(phy->spi_device->master);

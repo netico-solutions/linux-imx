@@ -38,21 +38,36 @@
  */
 static int wait_startup(struct tpm_chip *chip, int l)
 {
+	printk(KERN_ERR "TPM_CORE: line 41\n");
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
+	printk(KERN_ERR "TPM_CORE: line 43\n");
 	unsigned long stop = jiffies + chip->timeout_a;
+	printk(KERN_ERR "TPM_CORE: line 45\n");
 
 	do {
 		int rc;
 		u8 access;
-
+		
+		printk(KERN_ERR "TPM_CORE: line 51\n");
 		rc = tpm_tis_read8(priv, TPM_ACCESS(l), &access);
+		printk(KERN_ERR "access: %u", access);
+		printk(KERN_ERR "rc: %d", rc);
+		printk(KERN_ERR "TPM_CORE: line 53\n");
 		if (rc < 0)
 			return rc;
 
-		if (access & TPM_ACCESS_VALID)
+		printk(KERN_ERR "TPM_CORE: line 57\n");
+		printk(KERN_ERR "TPM_CORE: %x\n", access & TPM_ACCESS_VALID);
+		if (access & TPM_ACCESS_VALID){
+			printk(KERN_ERR "TPM_CORE: line 59\n");
 			return 0;
+			}
+		
+		printk(KERN_ERR "TPM_CORE: line 62\n");
 		msleep(TPM_TIMEOUT);
 	} while (time_before(jiffies, stop));
+
+	printk(KERN_ERR "TPM_CORE: line 66, timeouted\n");
 	return -1;
 }
 
@@ -690,6 +705,7 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
 	chip->timeout_d = msecs_to_jiffies(TIS_TIMEOUT_D_MAX);
 	priv->phy_ops = phy_ops;
 	dev_set_drvdata(&chip->dev, priv);
+	dev_info(dev, "TPM_CORE: line 693\n");
 	printk(KERN_ERR "TPM_CORE: line 693\n");
 
 	if (wait_startup(chip, 0) != 0) {
