@@ -297,7 +297,7 @@ static void encx24j600_int_link_handler(struct encx24j600_priv *priv)
 {
 	struct net_device *dev = priv->ndev;
 
-	netif_dbg(priv, intr, dev, "%s", __func__);
+	netif_info(priv, intr, dev, "%s", __func__);
 	encx24j600_check_link_status(priv);
 	encx24j600_clr_bits(priv, EIR, LINKIF);
 }
@@ -305,6 +305,7 @@ static void encx24j600_int_link_handler(struct encx24j600_priv *priv)
 static void encx24j600_tx_complete(struct encx24j600_priv *priv, bool err)
 {
 	struct net_device *dev = priv->ndev;
+	printk(KERN_INFO "ebcx24j600.c: Entered encx24j600_tx_complete func\n");
 
 	if (!priv->tx_skb) {
 		BUG();
@@ -322,7 +323,7 @@ static void encx24j600_tx_complete(struct encx24j600_priv *priv, bool err)
 
 	encx24j600_clr_bits(priv, EIR, TXIF | TXABTIF);
 
-	netif_dbg(priv, tx_done, dev, "TX Done%s\n", err ? ": Err" : "");
+	netif_info(priv, tx_done, dev, "TX Done%s\n", err ? ": Err" : "");
 
 	dev_kfree_skb(priv->tx_skb);
 	priv->tx_skb = NULL;
@@ -335,11 +336,13 @@ static void encx24j600_tx_complete(struct encx24j600_priv *priv, bool err)
 static int encx24j600_receive_packet(struct encx24j600_priv *priv,
 				     struct rsv *rsv)
 {
+	printk(KERN_INFO "ebcx24j600.c: Entered encx24j600_receive_packet func\n");
 	struct net_device *dev = priv->ndev;
 	struct sk_buff *skb = netdev_alloc_skb(dev, rsv->len + NET_IP_ALIGN);
 
 	if (!skb) {
 		pr_err_ratelimited("RX: OOM: packet dropped\n");
+		printk(KERN_INFO "ebcx24j600.c: !SKB encx24j600_receive_packet dropped\n");
 		dev->stats.rx_dropped++;
 		return -ENOMEM;
 	}
@@ -354,6 +357,7 @@ static int encx24j600_receive_packet(struct encx24j600_priv *priv,
 	skb->ip_summed = CHECKSUM_COMPLETE;
 
 	/* Maintain stats */
+	printk(KERN_INFO "ebcx24j600.c: Received %d packets\n", rsv->len);
 	dev->stats.rx_packets++;
 	dev->stats.rx_bytes += rsv->len;
 
@@ -428,6 +432,7 @@ static irqreturn_t encx24j600_isr(int irq, void *dev_id)
 			/* Packet counter is full */
 			netif_err(priv, rx_err, dev, "Packet counter full\n");
 		}
+		printk(KERN_INFO "ebcx24j600.c: encx24j600_isr dropped\n");
 		dev->stats.rx_dropped++;
 		encx24j600_clr_bits(priv, EIR, RXABTIF);
 	}
@@ -820,14 +825,14 @@ static void encx24j600_set_multicast_list(struct net_device *dev)
 	int oldfilter = priv->rxfilter;
 
 	if (dev->flags & IFF_PROMISC) {
-		netif_dbg(priv, link, dev, "promiscuous mode\n");
+		netif_info(priv, link, dev, "promiscuous mode\n");
 		priv->rxfilter = RXFILTER_PROMISC;
 	} else if ((dev->flags & IFF_ALLMULTI) || !netdev_mc_empty(dev)) {
-		netif_dbg(priv, link, dev, "%smulticast mode\n",
+		netif_info(priv, link, dev, "%smulticast mode\n",
 			  (dev->flags & IFF_ALLMULTI) ? "all-" : "");
 		priv->rxfilter = RXFILTER_MULTI;
 	} else {
-		netif_dbg(priv, link, dev, "normal mode\n");
+		netif_info(priv, link, dev, "normal mode\n");
 		priv->rxfilter = RXFILTER_NORMAL;
 	}
 
