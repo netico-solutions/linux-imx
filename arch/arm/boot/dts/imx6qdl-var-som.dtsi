@@ -219,7 +219,7 @@
 	
 	encx24j600: eth@0 {
 		compatible = "microchip,encx24j600";
-		spi-max-frequency = <20000000>;
+		spi-max-frequency = <2000000>;
 		interrupt-parent = <&gpio1>;
 		interrupts = <2 0>;
 		reg = <0>;
@@ -626,7 +626,7 @@
 				
 		pinctrl_ecspi2_1: ecspi2grp {
 				fsl,pins = <
-			    MX6QDL_PAD_DISP0_DAT19__ECSPI2_SCLK 0x100b1
+	    	MX6QDL_PAD_DISP0_DAT19__ECSPI2_SCLK 0x100b1
                 MX6QDL_PAD_CSI0_DAT9__ECSPI2_MOSI   0x100b1
                 MX6QDL_PAD_CSI0_DAT10__ECSPI2_MISO  0x100b1
                 MX6QDL_PAD_DISP0_DAT18__GPIO5_IO12  0x80000000 /* CS */

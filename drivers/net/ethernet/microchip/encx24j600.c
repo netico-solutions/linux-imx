@@ -469,11 +469,13 @@ static int encx24j600_soft_reset(struct encx24j600_priv *priv)
 	do {
 		encx24j600_write_reg(priv, EUDAST, EUDAST_TEST_VAL);
 		eudast = encx24j600_read_reg(priv, EUDAST);
+		printk(KERN_INFO "enc424j600: eudast read: %x", eudast);
 		usleep_range(25, 100);
 	} while ((eudast != EUDAST_TEST_VAL) && --timeout);
 	regcache_cache_bypass(priv->ctx.regmap, false);
 
 	if (timeout == 0) {
+		printk(KERN_ERR "encx24j600: EUDAST_TEST_VAL timeout\n");
 		ret = -ETIMEDOUT;
 		goto err_out;
 	}
