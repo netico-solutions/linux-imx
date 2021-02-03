@@ -219,7 +219,7 @@
 	
 	encx24j600: eth@0 {
 		compatible = "microchip,encx24j600";
-		spi-max-frequency = <20000000>;
+		spi-max-frequency = <12000000>;
 		interrupt-parent = <&gpio1>;
 		interrupts = <2 0>;
 		reg = <0>;

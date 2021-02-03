@@ -28,7 +28,9 @@
 #define DRV_NAME	"encx24j600"
 #define DRV_VERSION	"1.0"
 
-#define DEFAULT_MSG_ENABLE (NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_LINK | NETIF_MSG_RX_ERR | NETIF_MSG_RX_STATUS | NETIF_MSG_HW)
+#define DUMP_RSV 0
+
+#define DEFAULT_MSG_ENABLE (NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_LINK | NETIF_MSG_RX_ERR | NETIF_MSG_RX_STATUS) // | NETIF_MSG_HW)
 static int debug = -1;
 module_param(debug, int, 0000);
 MODULE_PARM_DESC(debug, "Debug level (0=none,...,16=all)");
@@ -98,7 +100,6 @@ static void encx24j600_dump_rsv(struct encx24j600_priv *priv, const char *msg,
 		   RSV_GETBIT(rsv->rxstat, RSV_RXPAUSEFRAME),
 		   RSV_GETBIT(rsv->rxstat, RSV_RXUNKNOWNOPCODE),
 		   RSV_GETBIT(rsv->rxstat, RSV_RXTYPEVLAN));
-	printk(KERN_INFO "\n");
 }
 
 static u16 encx24j600_read_reg(struct encx24j600_priv *priv, u8 reg)
@@ -306,10 +307,8 @@ static void encx24j600_int_link_handler(struct encx24j600_priv *priv)
 static void encx24j600_tx_complete(struct encx24j600_priv *priv, bool err)
 {
 	struct net_device *dev = priv->ndev;
-	// printk(KERN_INFO "ebcx24j600.c: Entered encx24j600_tx_complete func\n");
 
 	if (!priv->tx_skb) {
-		printk(KERN_INFO "ebcx24j600.c: encx24j600_tx_complete BUG()\n");
 		BUG();
 		return;
 	}
@@ -319,7 +318,6 @@ static void encx24j600_tx_complete(struct encx24j600_priv *priv, bool err)
 	if (err) 
 	        {
 		dev->stats.tx_errors++;
-		printk(KERN_INFO "ebcx24j600.c: encx24j600_tx_complete tx_error\n");
 		}
 	else
 		dev->stats.tx_packets++;
@@ -336,27 +334,24 @@ static void encx24j600_tx_complete(struct encx24j600_priv *priv, bool err)
 	netif_wake_queue(dev);
 
 	mutex_unlock(&priv->lock);
-	// printk(KERN_INFO "ebcx24j600.c: encx24j600_tx_complete end\n");
 }
 
 static int encx24j600_receive_packet(struct encx24j600_priv *priv,
 				     struct rsv *rsv)
 {
-	// printk(KERN_INFO "ebcx24j600.c: Entered encx24j600_receive_packet func\n");
 	struct net_device *dev = priv->ndev;
 	/* skbuff is a socket buffer */
 	struct sk_buff *skb = netdev_alloc_skb(dev, rsv->len + NET_IP_ALIGN);
 
 	if (!skb) {
 		pr_err_ratelimited("RX: OOM: packet dropped\n");
-		printk(KERN_INFO "ebcx24j600.c: !SKB encx24j600_receive_packet dropped\n");
 		dev->stats.rx_dropped++;
 		return -ENOMEM;
 	}
 	skb_reserve(skb, NET_IP_ALIGN);
 	encx24j600_raw_read(priv, RRXDATA, skb_put(skb, rsv->len), rsv->len);
 
-	if (netif_msg_pktdata(priv))
+	if (netif_msg_pktdata(priv) && DUMP_RSV)
 		dump_packet("RX", skb->len, skb->data);
 
 	skb->dev = dev;
@@ -368,7 +363,6 @@ static int encx24j600_receive_packet(struct encx24j600_priv *priv,
 	dev->stats.rx_bytes += rsv->len;
 
 	netif_rx(skb);
-	printk(KERN_INFO "ebcx24j600.c: Received packet\n", rsv->len);
 
 	return 0;
 }
@@ -384,26 +378,23 @@ static void encx24j600_rx_packets(struct encx24j600_priv *priv, u8 packet_count)
 		encx24j600_write_reg(priv, ERXRDPT, priv->next_packet);
 		encx24j600_raw_read(priv, RRXDATA, (u8 *)&rsv, sizeof(rsv));
 
-		if (netif_msg_rx_status(priv))
+		if (netif_msg_rx_status(priv) && DUMP_RSV) {
 			encx24j600_dump_rsv(priv, __func__, &rsv);
+			}
 
 		if (!RSV_GETBIT(rsv.rxstat, RSV_RXOK) ||
 		    (rsv.len > MAX_FRAMELEN)) {
 			netif_err(priv, rx_err, dev, "RX Error %04x\n",
 				  rsv.rxstat);
-			printk(KERN_INFO "ebcx24j600.c: rx_error\n");
 			dev->stats.rx_errors++;
 
 			if (RSV_GETBIT(rsv.rxstat, RSV_CRCERROR)) {
-				//printk(KERN_INFO "ebcx24j600.c: rx_error CRC\n");
 				dev->stats.rx_crc_errors++;
 				}
 			if (RSV_GETBIT(rsv.rxstat, RSV_LENCHECKERR)){
-				//printk(KERN_INFO "ebcx24j600.c: rx_error LENCHECK\n");
 				dev->stats.rx_frame_errors++;
 				}
 			if (rsv.len > MAX_FRAMELEN) {
-				//printk(KERN_INFO "ebcx24j600.c: rx_error MAX_FRAMELEN, rsv.len = %u\n", rsv.len);
 				dev->stats.rx_over_errors++;
 			}
 		} else {
@@ -443,9 +434,9 @@ static irqreturn_t encx24j600_isr(int irq, void *dev_id)
 
 	if (eir & RXABTIF) {
 
-		printk(KERN_INFO "ebcx24j600.c: encx24j600_isr dropped\n");	
+		/* printk(KERN_INFO "ebcx24j600.c: encx24j600_isr dropped\n");	
 		printk(KERN_INFO "ebcx24j600.c: RXABTIF: %u\n", (eir & RXABTIF) ? 1 : 0);	
-		printk(KERN_INFO "ebcx24j600.c: PCFULIF: %u\n", (eir & PCFULIF) ? 1 : 0);	
+		printk(KERN_INFO "ebcx24j600.c: PCFULIF: %u\n", (eir & PCFULIF) ? 1 : 0); */	
 		if (eir & PCFULIF) {
 			/* Packet counter is full */
 			netif_err(priv, rx_err, dev, "Packet counter full\n");
@@ -460,7 +451,6 @@ static irqreturn_t encx24j600_isr(int irq, void *dev_id)
 		mutex_lock(&priv->lock);
 
 		packet_count = encx24j600_read_reg(priv, ESTAT) & 0xff;
-		printk(KERN_INFO "ebcx24j600.c: isr %d packets pending to read\n", packet_count);
 		while (packet_count) {
 			encx24j600_rx_packets(priv, packet_count);
 			packet_count = encx24j600_read_reg(priv, ESTAT) & 0xff;
@@ -487,13 +477,11 @@ static int encx24j600_soft_reset(struct encx24j600_priv *priv)
 	do {
 		encx24j600_write_reg(priv, EUDAST, EUDAST_TEST_VAL);
 		eudast = encx24j600_read_reg(priv, EUDAST);
-		printk(KERN_INFO "enc424j600: eudast read: %x\n", eudast);
 		usleep_range(25, 100);
 	} while ((eudast != EUDAST_TEST_VAL) && --timeout);
 	regcache_cache_bypass(priv->ctx.regmap, false);
 
 	if (timeout == 0) {
-		printk(KERN_ERR "encx24j600: EUDAST_TEST_VAL timeout\n");
 		ret = -ETIMEDOUT;
 		goto err_out;
 	}
@@ -867,7 +855,7 @@ static void encx24j600_hw_tx(struct encx24j600_priv *priv)
 	netif_info(priv, tx_queued, dev, "TX Packet Len:%d\n",
 		   priv->tx_skb->len);
 
-	if (netif_msg_pktdata(priv))
+	if (netif_msg_pktdata(priv) && DUMP_RSV)
 		dump_packet("TX", priv->tx_skb->len, priv->tx_skb->data);
 
 	if (encx24j600_read_reg(priv, EIR) & TXABTIF)
