@@ -219,6 +219,8 @@ static int tpm_tis_spi_probe(struct spi_device *dev)
 
 	phy->spi_device = dev;
 
+	printk(KERN_INFO "tpm_tis_spi: Inside probe function");
+
 	return tpm_tis_core_init(&dev->dev, &phy->priv, -1, &tpm_spi_phy_ops,
 				 NULL);
 }

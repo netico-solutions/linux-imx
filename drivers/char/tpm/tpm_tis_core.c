@@ -675,6 +675,8 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
 	int rc, probe;
 	struct tpm_chip *chip;
 
+	printk(KERN_INFO "tpm_tis_core: Inside tis_core init");
+
 	chip = tpmm_chip_alloc(dev, &tpm_tis);
 	if (IS_ERR(chip))
 		return PTR_ERR(chip);

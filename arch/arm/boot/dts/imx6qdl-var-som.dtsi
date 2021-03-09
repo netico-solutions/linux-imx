@@ -203,10 +203,10 @@
 	pinctrl-0 = <&pinctrl_ecspi1_1>;
 	status = "okay";
 
-        chip1: spidev@0 {
-               compatible = "spidev";
-               spi-max-frequency = <20000000>;
-               reg = <0>;
+        slb: tpm@0 {
+               compatible = "infineon,slb9670";
+		spi-max-frequency = <2000000>;
+		reg = <0>;
 		};
 };
 
