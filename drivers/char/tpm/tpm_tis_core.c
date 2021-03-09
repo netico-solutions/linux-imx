@@ -38,6 +38,7 @@
  */
 static int wait_startup(struct tpm_chip *chip, int l)
 {
+	printk(KERN_INFO "tpm_tis_core: Inside wait_startup func\n");
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	unsigned long stop = jiffies + chip->timeout_a;
 
@@ -45,6 +46,7 @@ static int wait_startup(struct tpm_chip *chip, int l)
 		int rc;
 		u8 access;
 
+		printk(KERN_INFO "tpm_tis_core: Reading TPM_ACCESS\n");
 		rc = tpm_tis_read8(priv, TPM_ACCESS(l), &access);
 		if (rc < 0)
 			return rc;
@@ -53,6 +55,7 @@ static int wait_startup(struct tpm_chip *chip, int l)
 			return 0;
 		msleep(TPM_TIMEOUT);
 	} while (time_before(jiffies, stop));
+	printk(KERN_INFO "tpm_tis_core: Timed out\n");
 	return -1;
 }
 
@@ -675,7 +678,7 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
 	int rc, probe;
 	struct tpm_chip *chip;
 
-	printk(KERN_INFO "tpm_tis_core: Inside tis_core init");
+	printk(KERN_INFO "tpm_tis_core: Inside tis_core init\n");
 
 	chip = tpmm_chip_alloc(dev, &tpm_tis);
 	if (IS_ERR(chip))
