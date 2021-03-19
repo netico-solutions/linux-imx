@@ -8,6 +8,13 @@ menuconfig POWER_SUPPLY
 
 if POWER_SUPPLY
 
+config LTC3350_UPS
+	tristate "LTC3350 ups driver"
+	help
+	  Say Y here to enable support for monitoring the ltc3350 UPS
+	  charge controller within Linux. Say m to make it as a module.
+	  Module will be called ltc3350_ups.
+
 config POWER_SUPPLY_DEBUG
 	bool "Power supply debug"
 	help

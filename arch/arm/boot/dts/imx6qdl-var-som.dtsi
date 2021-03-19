@@ -291,6 +291,11 @@
 	pinctrl-0 = <&pinctrl_i2c2_2>;
 	status = "okay";
     
+	ltc3350:ltc3350@09 {
+		compatible = "ltc,ltc3350-i2c";
+		reg = <0x09>;
+};
+
     rtc: rtc@32 {
         compatible = "epson,rx8900";
 		reg = <0x32>;
