@@ -51,6 +51,8 @@ static int wait_startup(struct tpm_chip *chip, int l)
 		if (rc < 0)
 			return rc;
 
+		printk(KERN_INFO "tpm_tis_core: TPM_ACCESS value: %x\n", access);
+
 		if (access & TPM_ACCESS_VALID)
 			return 0;
 		msleep(TPM_TIMEOUT);
