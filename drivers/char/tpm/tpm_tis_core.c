@@ -40,10 +40,6 @@ static int wait_startup(struct tpm_chip *chip, int l)
 {
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	unsigned long stop = jiffies + chip->timeout_a;
-	u8 rid;
-	u16 vid;
-	u8 did;
-	u32 vendor;
 	int rc;
 
 	rc = tpm_tis_read16(priv, TPM_DID_VID(l), &vid);
@@ -52,24 +48,6 @@ static int wait_startup(struct tpm_chip *chip, int l)
 	}
 	else
 		printk(KERN_INFO "tpm_tis_core: UNABLE TO READ VID VALUE!");
-
-	rc = tpm_tis_read32(priv, TPM_DID_VID(0), &vendor);
-
-	rc = tpm_tis_read8(priv, TPM_RID(0), &rid);
-	
-	if (rc == 0)
-		printk(KERN_INFO "tpm_tis_spi: TPM (device-id 0x%X, vendor-id 0x%X, rev-id %d)\n",
-			vendor >> 16, vendor & 0xffff, rid);
-	
-	rc = tpm_tis_read8(priv, TPM_RID(l), &rid);
-	if (rc == 0)
-		printk(KERN_INFO "tpm_tis_core: TPM_RID value: %x\n", rid);
-
-
-
-	rc = tpm_tis_read8(priv, TPM_DID_VID(l) + 0x2, &did);
-	if (rc == 0)
-		printk(KERN_INFO "tpm_tis_core: TPM_DID value: %X\n", did);
 
 	do {
 		int rc;
