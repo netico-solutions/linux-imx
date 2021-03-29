@@ -38,9 +38,38 @@
  */
 static int wait_startup(struct tpm_chip *chip, int l)
 {
-	printk(KERN_INFO "tpm_tis_core: Inside wait_startup func\n");
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	unsigned long stop = jiffies + chip->timeout_a;
+	u8 rid;
+	u16 vid;
+	u8 did;
+	u32 vendor;
+	int rc;
+
+	rc = tpm_tis_read16(priv, TPM_DID_VID(l), &vid);
+	if (rc == 0) {
+		printk(KERN_INFO "tpm_tis_core: TPM_VID value: %X\n", vid);
+	}
+	else
+		printk(KERN_INFO "tpm_tis_core: UNABLE TO READ VID VALUE!");
+
+	rc = tpm_tis_read32(priv, TPM_DID_VID(0), &vendor);
+
+	rc = tpm_tis_read8(priv, TPM_RID(0), &rid);
+	
+	if (rc == 0)
+		printk(KERN_INFO "tpm_tis_spi: TPM (device-id 0x%X, vendor-id 0x%X, rev-id %d)\n",
+			vendor >> 16, vendor & 0xffff, rid);
+	
+	rc = tpm_tis_read8(priv, TPM_RID(l), &rid);
+	if (rc == 0)
+		printk(KERN_INFO "tpm_tis_core: TPM_RID value: %x\n", rid);
+
+
+
+	rc = tpm_tis_read8(priv, TPM_DID_VID(l) + 0x2, &did);
+	if (rc == 0)
+		printk(KERN_INFO "tpm_tis_core: TPM_DID value: %X\n", did);
 
 	do {
 		int rc;
@@ -752,26 +781,26 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
 	if (rc < 0)
 		goto out_err;
 
-	dev_dbg(dev, "TPM interface capabilities (0x%x):\n",
+	dev_info(dev, "TPM interface capabilities (0x%x):\n",
 		intfcaps);
 	if (intfcaps & TPM_INTF_BURST_COUNT_STATIC)
-		dev_dbg(dev, "\tBurst Count Static\n");
+		dev_info(dev, "\tBurst Count Static\n");
 	if (intfcaps & TPM_INTF_CMD_READY_INT)
-		dev_dbg(dev, "\tCommand Ready Int Support\n");
+		dev_info(dev, "\tCommand Ready Int Support\n");
 	if (intfcaps & TPM_INTF_INT_EDGE_FALLING)
-		dev_dbg(dev, "\tInterrupt Edge Falling\n");
+		dev_info(dev, "\tInterrupt Edge Falling\n");
 	if (intfcaps & TPM_INTF_INT_EDGE_RISING)
-		dev_dbg(dev, "\tInterrupt Edge Rising\n");
+		dev_info(dev, "\tInterrupt Edge Rising\n");
 	if (intfcaps & TPM_INTF_INT_LEVEL_LOW)
-		dev_dbg(dev, "\tInterrupt Level Low\n");
+		dev_info(dev, "\tInterrupt Level Low\n");
 	if (intfcaps & TPM_INTF_INT_LEVEL_HIGH)
-		dev_dbg(dev, "\tInterrupt Level High\n");
+		dev_info(dev, "\tInterrupt Level High\n");
 	if (intfcaps & TPM_INTF_LOCALITY_CHANGE_INT)
-		dev_dbg(dev, "\tLocality Change Int Support\n");
+		dev_info(dev, "\tLocality Change Int Support\n");
 	if (intfcaps & TPM_INTF_STS_VALID_INT)
-		dev_dbg(dev, "\tSts Valid Int Support\n");
+		dev_info(dev, "\tSts Valid Int Support\n");
 	if (intfcaps & TPM_INTF_DATA_AVAIL_INT)
-		dev_dbg(dev, "\tData Avail Int Support\n");
+		dev_info(dev, "\tData Avail Int Support\n");
 
 	/* Very early on issue a command to the TPM in polling mode to make
 	 * sure it works. May as well use that command to set the proper
