@@ -40,6 +40,7 @@ static int wait_startup(struct tpm_chip *chip, int l)
 {
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	unsigned long stop = jiffies + chip->timeout_a;
+	u16 vid;
 	int rc;
 
 	rc = tpm_tis_read16(priv, TPM_DID_VID(l), &vid);
