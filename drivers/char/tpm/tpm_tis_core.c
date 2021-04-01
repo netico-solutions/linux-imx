@@ -40,7 +40,10 @@ static int wait_startup(struct tpm_chip *chip, int l)
 {
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	unsigned long stop = jiffies + chip->timeout_a;
+	u8 rid;
 	u16 vid;
+	u8 did;
+	u32 vendor;
 	int rc;
 
 	rc = tpm_tis_read16(priv, TPM_DID_VID(l), &vid);
@@ -50,21 +53,40 @@ static int wait_startup(struct tpm_chip *chip, int l)
 	else
 		printk(KERN_INFO "tpm_tis_core: UNABLE TO READ VID VALUE!");
 
+	rc = tpm_tis_read32(priv, TPM_DID_VID(0), &vendor);
+
+	rc = tpm_tis_read8(priv, TPM_RID(0), &rid);
+	
+	if (rc == 0)
+		printk(KERN_INFO "tpm_tis_spi: TPM (device-id 0x%X, vendor-id 0x%X, rev-id %d)\n",
+			vendor >> 16, vendor & 0xffff, rid);
+	
+	rc = tpm_tis_read8(priv, TPM_RID(l), &rid);
+	if (rc == 0)
+		printk(KERN_INFO "tpm_tis_core: TPM_RID value: %x\n", rid);
+
+
+
+	rc = tpm_tis_read8(priv, TPM_DID_VID(l) + 0x2, &did);
+	if (rc == 0)
+		printk(KERN_INFO "tpm_tis_core: TPM_DID value: %X\n", did);
+
+
 	do {
 		int rc;
 		u8 access;
 
-		printk(KERN_INFO "tpm_tis_core: Reading TPM_ACCESS\n");
 		rc = tpm_tis_read8(priv, TPM_ACCESS(l), &access);
 		if (rc < 0)
 			return rc;
 
-		printk(KERN_INFO "tpm_tis_core: TPM_ACCESS value: %x\n", access);
+		printk(KERN_INFO "tpm_tis_core: TPM_ACCESS value: %X\n", access);
 
 		if (access & TPM_ACCESS_VALID)
 			return 0;
 		msleep(TPM_TIMEOUT);
 	} while (time_before(jiffies, stop));
+
 	printk(KERN_INFO "tpm_tis_core: Timed out\n");
 	return -1;
 }
@@ -76,6 +98,9 @@ static int check_locality(struct tpm_chip *chip, int l)
 	u8 access;
 
 	rc = tpm_tis_read8(priv, TPM_ACCESS(l), &access);
+	printk(KERN_INFO "tpm_tis_core: rc value for locality: %d\n", rc);
+	printk(KERN_INFO "tpm_tis_core: TPM_ACCESS value for locality: %X\n", access);
+
 	if (rc < 0)
 		return rc;
 
@@ -111,6 +136,8 @@ static int request_locality(struct tpm_chip *chip, int l)
 
 	if (check_locality(chip, l) >= 0)
 		return l;
+
+	printk(KERN_INFO "tpm_tis_core: writing TPM_ACCESS_REQUEST_USE\n");
 
 	rc = tpm_tis_write8(priv, TPM_ACCESS(l), TPM_ACCESS_REQUEST_USE);
 	if (rc < 0)
@@ -173,8 +200,10 @@ static int get_burstcount(struct tpm_chip *chip)
 	u32 value;
 
 	/* wait for burstcount */
-	/* which timeout value, spec has 2 answers (c & d) */
-	stop = jiffies + chip->timeout_d;
+	if (chip->flags & TPM_CHIP_FLAG_TPM2)
+		stop = jiffies + chip->timeout_a;
+	else
+		stop = jiffies + chip->timeout_d;
 	do {
 		rc = tpm_tis_read32(priv, TPM_STS(priv->locality), &value);
 		if (rc < 0)
@@ -219,7 +248,8 @@ static int tpm_tis_recv(struct tpm_chip *chip, u8 *buf, size_t count)
 {
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	int size = 0;
-	int expected, status;
+	int status;
+	u32 expected;
 
 	if (count < TPM_HEADER_SIZE) {
 		size = -EIO;
@@ -234,7 +264,7 @@ static int tpm_tis_recv(struct tpm_chip *chip, u8 *buf, size_t count)
 	}
 
 	expected = be32_to_cpu(*(__be32 *) (buf + 2));
-	if (expected > count) {
+	if (expected > count || expected < TPM_HEADER_SIZE) {
 		size = -EIO;
 		goto out;
 	}
@@ -267,7 +297,7 @@ out:
  * tpm.c can skip polling for the data to be available as the interrupt is
  * waited for here
  */
-static int tpm_tis_send_data(struct tpm_chip *chip, u8 *buf, size_t len)
+static int tpm_tis_send_data(struct tpm_chip *chip, const u8 *buf, size_t len)
 {
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	int rc, status, burstcnt;
@@ -356,7 +386,7 @@ static void disable_interrupts(struct tpm_chip *chip)
  * tpm.c can skip polling for the data to be available as the interrupt is
  * waited for here
  */
-static int tpm_tis_send_main(struct tpm_chip *chip, u8 *buf, size_t len)
+static int tpm_tis_send_main(struct tpm_chip *chip, const u8 *buf, size_t len)
 {
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	int rc;
@@ -688,8 +718,6 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
 	int rc, probe;
 	struct tpm_chip *chip;
 
-	printk(KERN_INFO "tpm_tis_core: Inside tis_core init\n");
-
 	chip = tpmm_chip_alloc(dev, &tpm_tis);
 	if (IS_ERR(chip))
 		return PTR_ERR(chip);
@@ -716,15 +744,20 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
 	if (rc < 0)
 		goto out_err;
 
+	printk(KERN_INFO "tpm_tis_spi: TPM_INT_ENABLE read\n");
+
 	intmask |= TPM_INTF_CMD_READY_INT | TPM_INTF_LOCALITY_CHANGE_INT |
 		   TPM_INTF_DATA_AVAIL_INT | TPM_INTF_STS_VALID_INT;
 	intmask &= ~TPM_GLOBAL_INT_ENABLE;
 	tpm_tis_write32(priv, TPM_INT_ENABLE(priv->locality), intmask);
+	printk(KERN_INFO "tpm_tis_spi: TPM_INT_ENABLE written, interrupts disabled\n");
+
 
 	if (request_locality(chip, 0) != 0) {
 		rc = -ENODEV;
 		goto out_err;
 	}
+	printk(KERN_INFO "tpm_tis_spi: locality requested successfully\n");
 
 	rc = tpm2_probe(chip);
 	if (rc)
