@@ -7,20 +7,56 @@
 
 
 struct ltc3350 {
+	struct i2c_client *client;
 	struct device *dev;
+	struct client_ops *ltc3350_client_ops;
+};
+
+struct client_ops {
+	int (*read_value)(struct i2c_client *client, u8 reg);
+	int (*write_value)(struct i2c_client *client, u8 reg, u16 value);
 };
 
 const void *ltc3350_data;
-static unsigned long ltc3350_private_data;
+//static unsigned long ltc3350_private_data;
+
+static int ltc3350_read_value(struct i2c_client *client, u8 reg)
+{
+	return i2c_smbus_read_byte_data(client, reg);
+}
+
+static int ltc3350_write_value(struct i2c_client *client, u8 reg, u16 value)
+{
+	return i2c_smbus_write_byte_data(client, reg, value);
+}
 
 static int ltc3350_probe(struct i2c_client *client,
 						 const struct i2c_device_id *id) {
 	struct ltc3350 *ltc3350;
+	u8 reg;
+	//u16 value__to_write;
+	u8 read_value;
 	int ret = 0;
 
 	ltc3350 = devm_kzalloc(&client->dev, sizeof(struct ltc3350), GFP_KERNEL);
 	if (ltc3350 == NULL){
 		return -ENOMEM;
+	}
+
+	i2c_set_clientdata(client, ltc3350);
+
+	ltc3350->client = client;
+	ltc3350->ltc3350_client_ops->read_value = ltc3350_read_value;
+	ltc3350->ltc3350_client_ops->write_value = ltc3350_write_value;
+
+	reg = 0x2A;
+	read_value = ltc3350->ltc3350_client_ops->read_value(ltc3350->client, reg);
+	if (read_value){
+		pr_info("ltc3350: Read value for temp: %X", read_value);
+	}
+	else {
+		pr_info("ltc3350: Unable to read value for temp!!");
+		ret = -1;
 	}
 
 	pr_info("ltc3350: Inside ltc3350 probe function");
