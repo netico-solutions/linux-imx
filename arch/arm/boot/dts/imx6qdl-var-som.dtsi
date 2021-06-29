@@ -198,13 +198,13 @@
 
 &ecspi1 {
 	fsl,spi-num-chipselects = <1>;
-	cs-gpios = <&gpio4 9 0>;
+	cs-gpios = <&gpio1 4 0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_ecspi1_1>;
 	status = "okay";
 
         slb: tpm@0 {
-               compatible = "infineon,slb9670";
+               compatible = "spidev";
 		spi-max-frequency = <5000000>;
 		reg = <0>;
 		};
@@ -217,11 +217,11 @@
 	cs-gpios = <&gpio5 12 0>;
 	status = "okay";
 	
-	encx24j600: eth@0 {
-		compatible = "microchip,encx24j600";
+	spidev_encx24j600: eth@0 {
+		compatible = "spidev";
 		spi-max-frequency = <12000000>;
-		interrupt-parent = <&gpio1>;
-		interrupts = <2 0>;
+		/*interrupt-parent = <&gpio1>;
+		interrupts = <2 0>;*/
 		reg = <0>;
 	};
 };
@@ -442,9 +442,9 @@
 				/* Audio Clock <-- external MCLK*/
 				MX6QDL_PAD_CSI0_MCLK__CCM_CLKO1		0x030b0
                 /*DDB mSPI rx interrupt*/
-                MX6QDL_PAD_EIM_D20__GPIO3_IO20      0x80000000
+                /*MX6QDL_PAD_EIM_D20__GPIO3_IO20      0x80000000*/
                 /*DDB mSPI tx interrupt*/
-                MX6QDL_PAD_CSI0_DAT11__GPIO5_IO29   0x80000000
+                /*MX6QDL_PAD_CSI0_DAT11__GPIO5_IO29   0x80000000*/
 			>;
 		};
 
@@ -625,7 +625,8 @@
 				MX6QDL_PAD_KEY_COL1__ECSPI1_MISO	0x100b1
 				MX6QDL_PAD_KEY_ROW0__ECSPI1_MOSI	0x100b1
 				MX6QDL_PAD_KEY_COL0__ECSPI1_SCLK	0x100b1
-				MX6QDL_PAD_KEY_ROW1__GPIO4_IO09     0x80000000
+				/*MX6QDL_PAD_KEY_ROW1__GPIO4_IO09     0x80000000*/
+				MX6QDL_PAD_GPIO_4__GPIO1_IO04     0x80000000
 			>;
 		};
 				
